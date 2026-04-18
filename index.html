@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Hero Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0a07;
+    --parchment: #f5ead6;
+    --parchment-mid: #e8d5b0;
+    --parchment-dark: #c9b48a;
+    --gold: #c8922a;
+    --gold-bright: #f0b840;
+    --gold-dim: #7a5a1a;
+    --rust: #8b3a1f;
+    --rust-light: #c05530;
+    --teal: #1a5c5c;
+    --teal-light: #2a8a8a;
+    --teal-bright: #3dbdbd;
+    --sea-dark: #0a1e2e;
+    --sea-mid: #0f2d42;
+    --sea-surface: #163a52;
+    --sea-foam: #9ac8d8;
+    --rope: #8b6e3d;
+    --text-primary: #f5ead6;
+    --text-muted: #9a8868;
+    --text-dim: #5c4e38;
+    --shadow: rgba(0,0,0,0.6);
+    --glow-gold: rgba(200,146,42,0.3);
+    --glow-teal: rgba(61,189,189,0.2);
+    --border-gold: rgba(200,146,42,0.4);
+    --border-teal: rgba(61,189,189,0.25);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background-color: var(--sea-dark);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated sea background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(26,92,92,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(10,30,46,0.8) 0%, transparent 60%),
+      linear-gradient(180deg, var(--sea-dark) 0%, var(--sea-mid) 50%, #0a1e2e 100%);
+    z-index: -2;
+  }
+
+  /* Subtle wave texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='20' viewBox='0 0 60 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q15 0 30 10 Q45 20 60 10' fill='none' stroke='rgba(61,189,189,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 60px 20px;
+    z-index: -1;
+    animation: waves 8s linear infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes waves { from { background-position: 0 0; } to { background-position: 60px 0; } }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
+    position: relative;
+    border-bottom: 1px solid var(--border-gold);
+    background: linear-gradient(180deg, rgba(10,15,20,0.9) 0%, transparent 100%);
+  }
+
+  .header-emblem {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    animation: floatY 4s ease-in-out infinite;
+  }
+  @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    background: linear-gradient(135deg, var(--parchment-dark) 0%, var(--gold-bright) 50%, var(--parchment-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    margin-bottom: 0.3rem;
+  }
+
+  header p {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── CONTROLS BAR ── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: rgba(15,45,66,0.6);
+    border-bottom: 1px solid var(--border-teal);
+    backdrop-filter: blur(4px);
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: rgba(10,20,30,0.7);
+    border: 1px solid var(--border-teal);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    color: var(--text-primary);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--teal-bright); box-shadow: 0 0 0 2px var(--glow-teal); }
+  .search-wrap input::placeholder { color: var(--text-dim); font-style: italic; }
+
+  .search-icon {
+    position: absolute;
+    left: 0.65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+
+  .sort-select {
+    background: rgba(10,20,30,0.7);
+    border: 1px solid var(--border-teal);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .sort-select:focus { border-color: var(--teal-bright); }
+
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+    border-color: var(--gold-bright);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(200,146,42,0.3);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, var(--gold), var(--gold-bright)); box-shadow: 0 4px 16px rgba(200,146,42,0.5); transform: translateY(-1px); }
+
+  .btn-secondary {
+    background: rgba(26,92,92,0.3);
+    border-color: var(--border-teal);
+    color: var(--teal-bright);
+  }
+  .btn-secondary:hover { background: rgba(26,92,92,0.5); border-color: var(--teal-bright); }
+
+  .btn-danger {
+    background: rgba(139,58,31,0.3);
+    border-color: rgba(139,58,31,0.6);
+    color: #e87a5a;
+  }
+  .btn-danger:hover { background: rgba(139,58,31,0.5); }
+
+  .hero-count {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.95rem;
+    margin-left: auto;
+  }
+
+  /* ── HERO GRID ── */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    padding: 1.25rem 1.5rem 3rem;
+  }
+
+  /* ── HERO CARD ── */
+  .hero-card {
+    background: linear-gradient(145deg, rgba(15,45,66,0.85) 0%, rgba(10,25,38,0.95) 100%);
+    border: 1px solid var(--border-teal);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    animation: cardIn 0.3s ease both;
+    position: relative;
+  }
+
+  @keyframes cardIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  .hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px var(--border-gold);
+    border-color: var(--gold-dim);
+  }
+
+  /* Rank-based accent stripe */
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-accent, var(--teal));
+  }
+
+  .hero-card[data-tier="12"]::before { background: linear-gradient(90deg, var(--gold-bright), var(--gold-dim)); }
+  .hero-card[data-tier="11"]::before { background: linear-gradient(90deg, #c0c0c0, #888); }
+  .hero-card[data-tier="10"]::before { background: linear-gradient(90deg, var(--rust-light), var(--rust)); }
+  .hero-card[data-tier="high"]::before  { background: linear-gradient(90deg, var(--teal-bright), var(--teal)); }
+  .hero-card[data-tier="mid"]::before   { background: linear-gradient(90deg, #5a8a6a, #3a5a4a); }
+  .hero-card[data-tier="low"]::before   { background: var(--text-dim); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem 0.6rem;
+    border-bottom: 1px solid rgba(61,189,189,0.12);
+  }
+
+  .hero-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--parchment);
+    letter-spacing: 0.04em;
+  }
+
+  .hero-badges {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .badge {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+
+  .badge-sp    { background: rgba(200,146,42,0.15); border-color: var(--gold-dim); color: var(--gold-bright); }
+  .badge-awake { background: rgba(61,189,189,0.15); border-color: var(--teal); color: var(--teal-bright); }
+  .badge-rank  { background: rgba(15,45,66,0.8); border-color: var(--border-gold); color: var(--parchment-dark); min-width: 2.4rem; text-align:center; }
+
+  /* Primary stats row */
+  .card-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 0.6rem 1rem;
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(61,189,189,0.08);
+  }
+
+  .stat-item { text-align: center; }
+  .stat-label {
+    font-size: 0.62rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+  .stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .stat-value.highlight { color: var(--gold-bright); }
+  .stat-value.teal { color: var(--teal-bright); }
+  .stat-value.max { color: #5adf8a; font-size: 0.85rem; }
+
+  /* Resource needs row */
+  .card-needs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 0.5rem 1rem;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(61,189,189,0.08);
+  }
+
+  .need-item { display: flex; flex-direction: column; align-items: center; }
+  .need-label { font-size: 0.6rem; font-family: 'Cinzel', serif; letter-spacing: 0.05em; color: var(--text-dim); text-transform: uppercase; }
+  .need-val { font-size: 0.9rem; color: var(--parchment-mid); font-weight: 300; }
+  .need-val.zero { color: #5adf8a; }
+  .need-val.high { color: #f0b840; }
+
+  /* Card footer / expand */
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+  }
+
+  .power-display {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .power-display span { color: var(--parchment-mid); font-weight: 600; }
+
+  .card-actions { display: flex; gap: 0.4rem; }
+
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border-teal);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Crimson Pro', serif;
+  }
+  .btn-icon:hover { border-color: var(--teal-bright); color: var(--teal-bright); background: rgba(61,189,189,0.1); }
+  .btn-icon.edit-btn:hover { border-color: var(--gold-bright); color: var(--gold-bright); background: rgba(200,146,42,0.1); }
+  .btn-icon.del-btn:hover { border-color: #e87a5a; color: #e87a5a; background: rgba(139,58,31,0.15); }
+
+  /* Expanded detail section */
+  .card-detail {
+    display: none;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgba(61,189,189,0.12);
+    background: rgba(5,15,25,0.5);
+    animation: slideDown 0.2s ease;
+  }
+  @keyframes slideDown { from { opacity:0; max-height:0; } to { opacity:1; max-height:400px; } }
+  .card-detail.open { display: block; }
+
+  .detail-section { margin-bottom: 0.75rem; }
+  .detail-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(200,146,42,0.15);
+    padding-bottom: 0.25rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.4rem;
+  }
+
+  .detail-item { text-align: center; }
+  .detail-item-label { font-size: 0.58rem; font-family: 'Cinzel', serif; color: var(--text-dim); display: block; }
+  .detail-item-val { font-size: 0.88rem; color: var(--parchment-mid); }
+
+  .detail-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+    color: var(--parchment-mid);
+  }
+  .detail-row span { color: var(--text-muted); font-size: 0.8rem; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-dim);
+  }
+  .empty-state .anchor { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+  .empty-state h3 { font-family: 'Cinzel', serif; color: var(--text-muted); margin-bottom: 0.5rem; }
+  .empty-state p { font-style: italic; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 10, 20, 0.85);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  .modal {
+    background: linear-gradient(160deg, var(--sea-mid) 0%, var(--sea-dark) 100%);
+    border: 1px solid var(--border-gold);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(200,146,42,0.1);
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn { from{transform:translateY(20px) scale(0.98);opacity:0} to{transform:none;opacity:1} }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border-gold);
+  }
+
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gold-bright);
+    letter-spacing: 0.06em;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .modal-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
+
+  .modal-body { padding: 1.25rem 1.5rem; }
+
+  /* Form sections */
+  .form-section {
+    margin-bottom: 1.25rem;
+  }
+  .form-section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(200,146,42,0.15);
+  }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; }
+  .form-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .form-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+
+  .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-field label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .form-field input, .form-field select {
+    background: rgba(5,15,25,0.8);
+    border: 1px solid var(--border-teal);
+    border-radius: 4px;
+    padding: 0.45rem 0.6rem;
+    color: var(--text-primary);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--teal-bright); box-shadow: 0 0 0 2px var(--glow-teal); }
+  .form-field input::placeholder { color: var(--text-dim); }
+
+  .form-field select option { background: var(--sea-dark); }
+
+  .form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+  .form-checkbox input[type="checkbox"] {
+    width: 1rem; height: 1rem;
+    accent-color: var(--teal-bright);
+    cursor: pointer;
+  }
+  .form-checkbox span {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-teal);
+    background: rgba(5,10,20,0.3);
+  }
+
+  /* Calculated preview in modal */
+  .calc-preview {
+    background: rgba(5,15,25,0.7);
+    border: 1px solid var(--border-teal);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .calc-preview-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--teal-bright);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .calc-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.5rem;
+  }
+  .calc-item { text-align: center; }
+  .calc-item-label { font-size: 0.6rem; font-family: 'Cinzel', serif; color: var(--text-dim); display: block; }
+  .calc-item-val { font-size: 0.95rem; color: var(--teal-bright); font-weight: 600; }
+  .calc-item-val.gold { color: var(--gold-bright); }
+  .calc-item-val.green { color: #5adf8a; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--sea-surface);
+    border: 1px solid var(--teal-bright);
+    border-radius: 6px;
+    padding: 0.7rem 1.2rem;
+    color: var(--teal-bright);
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    z-index: 200;
+    animation: toastIn 0.2s ease, toastOut 0.3s ease 2.2s forwards;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  @keyframes toastOut { to{opacity:0;transform:translateY(8px)} }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--sea-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--teal-bright); }
+
+  /* Responsive */
+  @media(max-width:500px) {
+    .hero-grid { grid-template-columns: 1fr; padding: 0.75rem; }
+    .controls { padding: 0.75rem; }
+    .modal-body { padding: 1rem; }
+    .modal-footer { padding: 0.75rem 1rem; }
+    .form-grid-5 { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-emblem">⚓</div>
+  <h1>SOC Hero Tracker</h1>
+  <p>Your crew — your records</p>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search heroes..." oninput="renderHeroes()">
+  </div>
+  <select class="sort-select" id="sortSelect" onchange="renderHeroes()">
+    <option value="rank_desc">Rank ↓</option>
+    <option value="rank_asc">Rank ↑</option>
+    <option value="name_asc">Name A–Z</option>
+    <option value="name_desc">Name Z–A</option>
+    <option value="power_desc">Power ↓</option>
+    <option value="shards_asc">Shards to Next ↑</option>
+  </select>
+  <button class="btn btn-primary" onclick="openAddModal()">+ Add Hero</button>
+  <span class="hero-count" id="heroCount"></span>
+</div>
+
+<div class="hero-grid" id="heroGrid"></div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Add Hero</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-section">
+        <div class="form-section-title">Identity</div>
+        <div class="form-grid-2">
+          <div class="form-field" style="grid-column:1/-1">
+            <label>Hero Name</label>
+            <input type="text" id="f_name" placeholder="e.g. Linae">
+          </div>
+        </div>
+        <div style="display:flex;gap:1.5rem;margin-top:0.6rem;flex-wrap:wrap">
+          <label class="form-checkbox">
+            <input type="checkbox" id="f_sp"> <span>Has SP</span>
+          </label>
+          <label class="form-checkbox">
+            <input type="checkbox" id="f_awakened"> <span>Awakened</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Progression</div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Shards</label>
+            <input type="number" id="f_shards" min="0" max="700" placeholder="0" oninput="updateCalcPreview()">
+          </div>
+          <div class="form-field">
+            <label>Level</label>
+            <input type="number" id="f_level" min="0" max="200" placeholder="0" oninput="updateCalcPreview()">
+          </div>
+          <div class="form-field">
+            <label>XP Level</label>
+            <input type="number" id="f_xp_level" min="0" max="30" placeholder="0" oninput="updateCalcPreview()">
+          </div>
+          <div class="form-field">
+            <label>SP Level</label>
+            <input type="number" id="f_sp_level" min="0" max="81" placeholder="0" oninput="updateCalcPreview()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Awake Circle</div>
+        <div class="form-grid-3">
+          <div class="form-field" style="grid-column:1/-1">
+            <label>Circle Level</label>
+            <select id="f_circle" onchange="updateCalcPreview()">
+              <option value="">— Not set —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Skills (levels 0–20)</div>
+        <div class="form-grid-5">
+          <div class="form-field"><label>Skill 1</label><input type="number" id="f_s1" min="0" max="20" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>Skill 2</label><input type="number" id="f_s2" min="0" max="20" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>Skill 3</label><input type="number" id="f_s3" min="0" max="20" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>Skill 4</label><input type="number" id="f_s4" min="0" max="20" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>Skill 5</label><input type="number" id="f_s5" min="0" max="20" placeholder="0" oninput="updateCalcPreview()"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">SP Skills (levels 0–5)</div>
+        <div class="form-grid-5">
+          <div class="form-field"><label>SP 1</label><input type="number" id="f_sp1" min="0" max="5" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>SP 2</label><input type="number" id="f_sp2" min="0" max="5" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>SP 3</label><input type="number" id="f_sp3" min="0" max="5" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>SP 4</label><input type="number" id="f_sp4" min="0" max="5" placeholder="0" oninput="updateCalcPreview()"></div>
+          <div class="form-field"><label>SP 5</label><input type="number" id="f_sp5" min="0" max="5" placeholder="0" oninput="updateCalcPreview()"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Combat Stats</div>
+        <div class="form-grid">
+          <div class="form-field"><label>Power</label><input type="number" id="f_power" min="0" placeholder="0"></div>
+          <div class="form-field"><label>STR</label><input type="number" id="f_str" min="0" placeholder="0"></div>
+          <div class="form-field"><label>CON</label><input type="number" id="f_con" min="0" placeholder="0"></div>
+          <div class="form-field"><label>AGI</label><input type="number" id="f_agi" min="0" placeholder="0"></div>
+          <div class="form-field"><label>DEX</label><input type="number" id="f_dex" min="0" placeholder="0"></div>
+        </div>
+      </div>
+
+      <!-- Live calculated preview -->
+      <div class="calc-preview" id="calcPreview">
+        <div class="calc-preview-title">⚙ Calculated Needs (auto)</div>
+        <div class="calc-preview-grid" id="calcPreviewGrid"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHero()">Save Hero</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// LOOKUP TABLES (from your spreadsheet)
+// ══════════════════════════════════════════════
+
+const SHARDS_TABLE = [
+  {shards:0,tier:"0"},{shards:50,tier:"2",rank:2},{shards:54,tier:"2.1"},{shards:58,tier:"2.2"},{shards:62,tier:"2.3"},{shards:66,tier:"2.4"},
+  {shards:74,tier:"3",rank:3},{shards:80,tier:"3.1"},{shards:86,tier:"3.2"},{shards:92,tier:"3.3"},{shards:98,tier:"3.4"},
+  {shards:110,tier:"4",rank:4},{shards:118,tier:"4.1"},{shards:126,tier:"4.2"},{shards:134,tier:"4.3"},{shards:142,tier:"4.4"},
+  {shards:158,tier:"5",rank:5},{shards:168,tier:"5.1"},{shards:178,tier:"5.2"},{shards:188,tier:"5.3"},{shards:198,tier:"5.4"},
+  {shards:218,tier:"6",rank:6},{shards:228,tier:"6.1"},{shards:238,tier:"6.2"},{shards:248,tier:"6.3"},{shards:258,tier:"6.4"},
+  {shards:278,tier:"7",rank:7},{shards:288,tier:"7.1"},{shards:298,tier:"7.2"},{shards:308,tier:"7.3"},{shards:318,tier:"7.4"},
+  {shards:338,tier:"8",rank:8},{shards:350,tier:"8.1"},{shards:362,tier:"8.2"},{shards:374,tier:"8.3"},{shards:386,tier:"8.4"},
+  {shards:410,tier:"9",rank:9},{shards:422,tier:"9.1"},{shards:434,tier:"9.2"},{shards:446,tier:"9.3"},{shards:458,tier:"9.4"},
+  {shards:482,tier:"10",rank:10},{shards:500,tier:"10.1"},{shards:518,tier:"10.2"},{shards:536,tier:"10.3"},{shards:554,tier:"10.4"},
+  {shards:590,tier:"11",rank:11},{shards:608,tier:"11.1"},{shards:626,tier:"11.2"},{shards:644,tier:"11.3"},{shards:662,tier:"11.4"},
+  {shards:700,tier:"12",rank:12}
+];
+
+const EYES_TEARS_TABLE = [
+  {level:0,eyes_left:45,tears_left:10542},{level:1,eyes_left:25,tears_left:10542},{level:2,eyes_left:25,tears_left:10467},
+  {level:3,eyes_left:25,tears_left:10385},{level:4,eyes_left:25,tears_left:10295},{level:5,eyes_left:25,tears_left:10196},
+  {level:6,eyes_left:24,tears_left:10088},{level:7,eyes_left:24,tears_left:9970},{level:8,eyes_left:24,tears_left:9841},
+  {level:9,eyes_left:24,tears_left:9700},{level:10,eyes_left:24,tears_left:9545},{level:11,eyes_left:21,tears_left:9375},
+  {level:12,eyes_left:21,tears_left:9188},{level:13,eyes_left:21,tears_left:8983},{level:14,eyes_left:21,tears_left:8758},
+  {level:15,eyes_left:21,tears_left:8511},{level:16,eyes_left:16,tears_left:8240},{level:17,eyes_left:16,tears_left:7942},
+  {level:18,eyes_left:16,tears_left:7615},{level:19,eyes_left:16,tears_left:7256},{level:20,eyes_left:16,tears_left:6862},
+  {level:21,eyes_left:9,tears_left:6429},{level:22,eyes_left:9,tears_left:5953},{level:23,eyes_left:9,tears_left:5430},
+  {level:24,eyes_left:9,tears_left:4855},{level:25,eyes_left:9,tears_left:4223},{level:26,eyes_left:0,tears_left:3528},
+  {level:27,eyes_left:0,tears_left:2764},{level:28,eyes_left:0,tears_left:1924},{level:29,eyes_left:0,tears_left:1000},
+  {level:30,eyes_left:0,tears_left:0}
+];
+
+const HEARTS_TABLE = [
+  {circle:"B.0",hearts_to_awake:1075,hearts_to_1st_red:6025,hearts_total:20875},
+  {circle:"B.1.1",hearts_to_awake:1070,hearts_to_1st_red:6020,hearts_total:20870},
+  {circle:"B.1.2",hearts_to_awake:1060,hearts_to_1st_red:6010,hearts_total:20860},
+  {circle:"B.1.3",hearts_to_awake:1045,hearts_to_1st_red:5995,hearts_total:20845},
+  {circle:"B.1.4",hearts_to_awake:1025,hearts_to_1st_red:5975,hearts_total:20825},
+  {circle:"B.1.5",hearts_to_awake:1000,hearts_to_1st_red:5950,hearts_total:20800},
+  {circle:"B.2.1",hearts_to_awake:985,hearts_to_1st_red:5935,hearts_total:20785},
+  {circle:"B.2.2",hearts_to_awake:965,hearts_to_1st_red:5915,hearts_total:20765},
+  {circle:"B.2.3",hearts_to_awake:940,hearts_to_1st_red:5890,hearts_total:20740},
+  {circle:"B.2.4",hearts_to_awake:910,hearts_to_1st_red:5860,hearts_total:20710},
+  {circle:"B.2.5",hearts_to_awake:875,hearts_to_1st_red:5825,hearts_total:20675},
+  {circle:"B.3.1",hearts_to_awake:850,hearts_to_1st_red:5800,hearts_total:20650},
+  {circle:"B.3.2",hearts_to_awake:820,hearts_to_1st_red:5770,hearts_total:20620},
+  {circle:"B.3.3",hearts_to_awake:785,hearts_to_1st_red:5735,hearts_total:20585},
+  {circle:"B.3.4",hearts_to_awake:745,hearts_to_1st_red:5695,hearts_total:20545},
+  {circle:"B.3.5",hearts_to_awake:700,hearts_to_1st_red:5650,hearts_total:20500},
+  {circle:"B.4.1",hearts_to_awake:665,hearts_to_1st_red:5615,hearts_total:20465},
+  {circle:"B.4.2",hearts_to_awake:625,hearts_to_1st_red:5575,hearts_total:20425},
+  {circle:"B.4.3",hearts_to_awake:580,hearts_to_1st_red:5530,hearts_total:20380},
+  {circle:"B.4.4",hearts_to_awake:530,hearts_to_1st_red:5480,hearts_total:20330},
+  {circle:"B.4.5",hearts_to_awake:475,hearts_to_1st_red:5425,hearts_total:20275},
+  {circle:"B.5.1",hearts_to_awake:430,hearts_to_1st_red:5380,hearts_total:20230},
+  {circle:"B.5.2",hearts_to_awake:375,hearts_to_1st_red:5325,hearts_total:20175},
+  {circle:"B.5.3",hearts_to_awake:310,hearts_to_1st_red:5260,hearts_total:20110},
+  {circle:"B.5.4",hearts_to_awake:235,hearts_to_1st_red:5185,hearts_total:20035},
+  {circle:"B.5.5",hearts_to_awake:150,hearts_to_1st_red:5100,hearts_total:19950},
+  {circle:"Awaken",hearts_to_awake:0,hearts_to_1st_red:4950,hearts_total:19800},
+  {circle:"R0.0.0",hearts_to_awake:"MAX",hearts_to_1st_red:4950,hearts_total:19800},
+  {circle:"R0.1.1",hearts_to_awake:"MAX",hearts_to_1st_red:4875,hearts_total:19725},
+  {circle:"R0.1.2",hearts_to_awake:"MAX",hearts_to_1st_red:4790,hearts_total:19640},
+  {circle:"R0.1.3",hearts_to_awake:"MAX",hearts_to_1st_red:4695,hearts_total:19545},
+  {circle:"R0.1.4",hearts_to_awake:"MAX",hearts_to_1st_red:4590,hearts_total:19440},
+  {circle:"R0.1.5",hearts_to_awake:"MAX",hearts_to_1st_red:4475,hearts_total:19325},
+  {circle:"R0.2.1",hearts_to_awake:"MAX",hearts_to_1st_red:4380,hearts_total:19230},
+  {circle:"R0.2.2",hearts_to_awake:"MAX",hearts_to_1st_red:4275,hearts_total:19125},
+  {circle:"R0.2.3",hearts_to_awake:"MAX",hearts_to_1st_red:4160,hearts_total:19010},
+  {circle:"R0.2.4",hearts_to_awake:"MAX",hearts_to_1st_red:4035,hearts_total:18885},
+  {circle:"R0.2.5",hearts_to_awake:"MAX",hearts_to_1st_red:3900,hearts_total:18750},
+  {circle:"R0.3.1",hearts_to_awake:"MAX",hearts_to_1st_red:3785,hearts_total:18635},
+  {circle:"R0.3.2",hearts_to_awake:"MAX",hearts_to_1st_red:3660,hearts_total:18510},
+  {circle:"R0.3.3",hearts_to_awake:"MAX",hearts_to_1st_red:3525,hearts_total:18375},
+  {circle:"R0.3.4",hearts_to_awake:"MAX",hearts_to_1st_red:3380,hearts_total:18230},
+  {circle:"R0.3.5",hearts_to_awake:"MAX",hearts_to_1st_red:3225,hearts_total:18075},
+  {circle:"R0.4.1",hearts_to_awake:"MAX",hearts_to_1st_red:3090,hearts_total:17940},
+  {circle:"R0.4.2",hearts_to_awake:"MAX",hearts_to_1st_red:2935,hearts_total:17785},
+  {circle:"R0.4.3",hearts_to_awake:"MAX",hearts_to_1st_red:2760,hearts_total:17610},
+  {circle:"R0.4.4",hearts_to_awake:"MAX",hearts_to_1st_red:2565,hearts_total:17415},
+  {circle:"R0.4.5",hearts_to_awake:"MAX",hearts_to_1st_red:2350,hearts_total:17200},
+  {circle:"R0.5.1",hearts_to_awake:"MAX",hearts_to_1st_red:2175,hearts_total:17025},
+  {circle:"R0.5.2",hearts_to_awake:"MAX",hearts_to_1st_red:1980,hearts_total:16830},
+  {circle:"R0.5.3",hearts_to_awake:"MAX",hearts_to_1st_red:1765,hearts_total:16615},
+  {circle:"R0.5.4",hearts_to_awake:"MAX",hearts_to_1st_red:1530,hearts_total:16380},
+  {circle:"R0.5.5",hearts_to_awake:"MAX",hearts_to_1st_red:1275,hearts_total:16125},
+  {circle:"R0.6.1",hearts_to_awake:"MAX",hearts_to_1st_red:1060,hearts_total:15910},
+  {circle:"R0.6.2",hearts_to_awake:"MAX",hearts_to_1st_red:825,hearts_total:15675},
+  {circle:"R0.6.3",hearts_to_awake:"MAX",hearts_to_1st_red:570,hearts_total:15420},
+  {circle:"R0.6.4",hearts_to_awake:"MAX",hearts_to_1st_red:295,hearts_total:15145},
+  {circle:"R0.6.5",hearts_to_awake:"MAX",hearts_to_1st_red:0,hearts_total:14850},
+  {circle:"R1.0.0",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:14850},
+  {circle:"R1.1.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:14595},
+  {circle:"R1.1.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:14320},
+  {circle:"R1.1.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:14025},
+  {circle:"R1.1.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:13710},
+  {circle:"R1.1.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:13375},
+  {circle:"R1.2.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:13080},
+  {circle:"R1.2.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:12765},
+  {circle:"R1.2.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:12430},
+  {circle:"R1.2.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:12075},
+  {circle:"R1.2.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:11700},
+  {circle:"R1.3.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:11365},
+  {circle:"R1.3.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:10980},
+  {circle:"R1.3.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:10545},
+  {circle:"R1.3.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:10060},
+  {circle:"R1.3.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:9525},
+  {circle:"R1.4.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:9090},
+  {circle:"R1.4.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:8605},
+  {circle:"R1.4.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:8070},
+  {circle:"R1.4.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:7485},
+  {circle:"R1.4.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:6850},
+  {circle:"R1.5.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:6315},
+  {circle:"R1.5.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:5730},
+  {circle:"R1.5.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:5095},
+  {circle:"R1.5.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:4410},
+  {circle:"R1.5.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:3675},
+  {circle:"R1.6.1",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:3040},
+  {circle:"R1.6.2",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:2355},
+  {circle:"R1.6.3",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:1620},
+  {circle:"R1.6.4",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:835},
+  {circle:"R1.6.5",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:0},
+  {circle:"MAX",hearts_to_awake:"MAX",hearts_to_1st_red:"MAX",hearts_total:"MAX"}
+];
+
+// Skills table: index = skill level
+const PRIMARY_SKILL = [
+  {cigars:0,cigars_needed:225,fruit:0,fruit_needed:1550},
+  {cigars:0,cigars_needed:325,fruit:0,fruit_needed:1550},
+  {cigars:5,cigars_needed:320,fruit:0,fruit_needed:1550},
+  {cigars:5,cigars_needed:315,fruit:0,fruit_needed:1550},
+  {cigars:10,cigars_needed:305,fruit:0,fruit_needed:1550},
+  {cigars:15,cigars_needed:290,fruit:0,fruit_needed:1550},
+  {cigars:30,cigars_needed:260,fruit:0,fruit_needed:1550},
+  {cigars:40,cigars_needed:220,fruit:0,fruit_needed:1550},
+  {cigars:50,cigars_needed:170,fruit:0,fruit_needed:1550},
+  {cigars:70,cigars_needed:100,fruit:0,fruit_needed:1550},
+  {cigars:100,cigars_needed:0,fruit:0,fruit_needed:1550},
+  {cigars:0,cigars_needed:0,fruit:0,fruit_needed:1550},
+  {cigars:0,cigars_needed:0,fruit:30,fruit_needed:1520},
+  {cigars:0,cigars_needed:0,fruit:40,fruit_needed:1480},
+  {cigars:0,cigars_needed:0,fruit:50,fruit_needed:1430},
+  {cigars:0,cigars_needed:0,fruit:60,fruit_needed:1370},
+  {cigars:0,cigars_needed:0,fruit:70,fruit_needed:1300},
+  {cigars:0,cigars_needed:0,fruit:100,fruit_needed:1200},
+  {cigars:0,cigars_needed:0,fruit:130,fruit_needed:1070},
+  {cigars:0,cigars_needed:0,fruit:160,fruit_needed:910},
+  {cigars:0,cigars_needed:0,fruit:200,fruit_needed:710}
+];
+
+const SECONDARY_SKILL = [
+  {cigars:0,cigars_needed:35,fruit:0,fruit_needed:260},
+  {cigars:0,cigars_needed:35,fruit:0,fruit_needed:260},
+  {cigars:5,cigars_needed:30,fruit:0,fruit_needed:260},
+  {cigars:5,cigars_needed:25,fruit:0,fruit_needed:260},
+  {cigars:10,cigars_needed:15,fruit:0,fruit_needed:260},
+  {cigars:15,cigars_needed:0,fruit:0,fruit_needed:260},
+  {cigars:0,cigars_needed:0,fruit:20,fruit_needed:240},
+  {cigars:0,cigars_needed:0,fruit:30,fruit_needed:210},
+  {cigars:0,cigars_needed:0,fruit:40,fruit_needed:170},
+  {cigars:0,cigars_needed:0,fruit:70,fruit_needed:100},
+  {cigars:0,cigars_needed:0,fruit:100,fruit_needed:0}
+];
+
+// ══════════════════════════════════════════════
+// CALCULATION FUNCTIONS
+// ══════════════════════════════════════════════
+
+function getRankFromShards(shards) {
+  if (shards === null || shards === undefined || shards === '') return '—';
+  const s = parseFloat(shards);
+  if (isNaN(s)) return '—';
+  if (s >= 700) return 'MAX';
+  // find current tier
+  let tier = '0';
+  for (let i = 0; i < SHARDS_TABLE.length; i++) {
+    if (s >= SHARDS_TABLE[i].shards) tier = SHARDS_TABLE[i].tier;
+    else break;
+  }
+  return tier;
+}
+
+function getShardsToNextTier(shards) {
+  if (shards === null || shards === undefined || shards === '') return '—';
+  const s = parseFloat(shards);
+  if (isNaN(s)) return '—';
+  if (s >= 700) return 'MAX';
+  for (let i = 0; i < SHARDS_TABLE.length; i++) {
+    if (SHARDS_TABLE[i].shards > s) return SHARDS_TABLE[i].shards - s;
+  }
+  return 'MAX';
+}
+
+function getShardsToTier(shards, targetTier) {
+  const s = parseFloat(shards) || 0;
+  const row = SHARDS_TABLE.find(r => r.tier === String(targetTier));
+  if (!row) return 'N/A';
+  if (s >= row.shards) return 0;
+  return row.shards - s;
+}
+
+function getEyesTears(xpLevel) {
+  const lvl = parseInt(xpLevel) || 0;
+  const row = EYES_TEARS_TABLE.find(r => r.level === lvl);
+  return row ? {eyes: row.eyes_left, tears: row.tears_left} : {eyes: 45, tears: 10542};
+}
+
+function getHearts(circle) {
+  if (!circle) return {awake: 1075, first_red: 6025, total: 20875};
+  const row = HEARTS_TABLE.find(r => r.circle === circle);
+  return row ? {awake: row.hearts_to_awake, first_red: row.hearts_to_1st_red, total: row.hearts_total} : {awake: '?', first_red: '?', total: '?'};
+}
+
+function getSkillCigarsNeeded(level, isPrimary) {
+  const table = isPrimary ? PRIMARY_SKILL : SECONDARY_SKILL;
+  const lvl = parseInt(level) || 0;
+  const maxIdx = table.length - 1;
+  const idx = Math.min(lvl, maxIdx);
+  return table[idx] ? table[idx].cigars_needed : 0;
+}
+
+function getSkillFruitNeeded(level, isPrimary) {
+  const table = isPrimary ? PRIMARY_SKILL : SECONDARY_SKILL;
+  const lvl = parseInt(level) || 0;
+  const maxIdx = table.length - 1;
+  const idx = Math.min(lvl, maxIdx);
+  return table[idx] ? table[idx].fruit_needed : 0;
+}
+
+function calcHero(hero) {
+  const rank = getRankFromShards(hero.shards);
+  const shardsToNext = getShardsToNextTier(hero.shards);
+
+  const et = getEyesTears(hero.xp_level);
+  const ht = getHearts(hero.circle);
+
+  // skills: s1 is primary, s2-s5 are secondary
+  const cigars_s1 = getSkillCigarsNeeded(hero.s1, true);
+  const cigars_s2 = getSkillCigarsNeeded(hero.s2, false);
+  const cigars_s3 = getSkillCigarsNeeded(hero.s3, false);
+  const cigars_s4 = getSkillCigarsNeeded(hero.s4, false);
+  const cigars_s5 = hero.s5 !== undefined ? getSkillCigarsNeeded(hero.s5, false) : 0;
+  const total_cigars = cigars_s1 + cigars_s2 + cigars_s3 + cigars_s4 + cigars_s5;
+
+  const fruit_s1 = getSkillFruitNeeded(hero.s1, true);
+  const fruit_s2 = getSkillFruitNeeded(hero.s2, false);
+  const fruit_s3 = getSkillFruitNeeded(hero.s3, false);
+  const fruit_s4 = getSkillFruitNeeded(hero.s4, false);
+  const fruit_s5 = hero.s5 !== undefined ? getSkillFruitNeeded(hero.s5, false) : 0;
+
+  const shards_to_6 = getShardsToTier(hero.shards, '6');
+  const shards_to_8 = getShardsToTier(hero.shards, '8');
+  const shards_to_10 = getShardsToTier(hero.shards, '10');
+  const shards_to_12 = getShardsToTier(hero.shards, '12');
+
+  return {
+    rank, shardsToNext,
+    eyes: et.eyes, tears: et.tears,
+    hearts_awake: ht.awake, hearts_first_red: ht.first_red, hearts_total: ht.total,
+    cigars_s1, cigars_s2, cigars_s3, cigars_s4, cigars_s5,
+    total_cigars,
+    fruit_s1, fruit_s2, fruit_s3, fruit_s4, fruit_s5,
+    shards_to_6, shards_to_8, shards_to_10, shards_to_12
+  };
+}
+
+// ══════════════════════════════════════════════
+// DATA STORAGE
+// ══════════════════════════════════════════════
+
+function loadHeroes() {
+  try {
+    const raw = localStorage.getItem('soc_heroes');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveHeroes(heroes) {
+  try { localStorage.setItem('soc_heroes', JSON.stringify(heroes)); } catch(e) {}
+}
+
+let heroes = loadHeroes();
+let editingId = null;
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+
+function getTierAttr(rank) {
+  if (rank === 'MAX' || rank === '12') return '12';
+  if (rank && rank.startsWith('11')) return '11';
+  if (rank && rank.startsWith('10')) return '10';
+  const n = parseFloat(rank);
+  if (n >= 7) return 'high';
+  if (n >= 4) return 'mid';
+  return 'low';
+}
+
+function fmtVal(v) {
+  if (v === 'MAX') return '<span class="max">MAX</span>';
+  if (v === '—' || v === undefined || v === null || v === '') return '<span style="color:var(--text-dim)">—</span>';
+  if (v === 0) return '<span class="need-val zero">✓</span>';
+  return v.toLocaleString ? v.toLocaleString() : v;
+}
+
+function renderHeroes() {
+  const grid = document.getElementById('heroGrid');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let list = [...heroes];
+
+  if (search) {
+    list = list.filter(h => h.name.toLowerCase().includes(search));
+  }
+
+  const calcs = list.map(h => ({h, c: calcHero(h)}));
+
+  calcs.sort((a, b) => {
+    switch(sort) {
+      case 'rank_desc': {
+        const ra = a.c.rank === 'MAX' ? 99 : parseFloat(a.c.rank) || 0;
+        const rb = b.c.rank === 'MAX' ? 99 : parseFloat(b.c.rank) || 0;
+        return rb - ra;
+      }
+      case 'rank_asc': {
+        const ra = a.c.rank === 'MAX' ? 99 : parseFloat(a.c.rank) || 0;
+        const rb = b.c.rank === 'MAX' ? 99 : parseFloat(b.c.rank) || 0;
+        return ra - rb;
+      }
+      case 'name_asc': return a.h.name.localeCompare(b.h.name);
+      case 'name_desc': return b.h.name.localeCompare(a.h.name);
+      case 'power_desc': return (parseFloat(b.h.power)||0) - (parseFloat(a.h.power)||0);
+      case 'shards_asc': {
+        const sa = a.c.shardsToNext === 'MAX' ? 9999 : (a.c.shardsToNext === '—' ? 10000 : a.c.shardsToNext);
+        const sb = b.c.shardsToNext === 'MAX' ? 9999 : (b.c.shardsToNext === '—' ? 10000 : b.c.shardsToNext);
+        return sa - sb;
+      }
+    }
+    return 0;
+  });
+
+  document.getElementById('heroCount').textContent = `${list.length} of ${heroes.length} hero${heroes.length!==1?'es':''}`;
+
+  if (calcs.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="anchor">⚓</div>
+      <h3>${heroes.length === 0 ? 'No Heroes Yet' : 'No Matches Found'}</h3>
+      <p>${heroes.length === 0 ? 'Add your first hero to start tracking your crew.' : 'Try a different search.'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = calcs.map(({h, c}) => {
+    const tierAttr = getTierAttr(c.rank);
+    const rankDisplay = c.rank === 'MAX' ? 'MAX' : (c.rank || '—');
+    const heartVal = c.hearts_total;
+    const heartDisplay = heartVal === 'MAX' ? 'MAX' : (heartVal === '?' ? '?' : Number(heartVal).toLocaleString());
+    const heartClass = heartVal === 'MAX' ? 'max' : (heartVal === 0 ? 'zero' : '');
+
+    return `<div class="hero-card" data-tier="${tierAttr}" data-id="${h.id}">
+      <div class="card-header">
+        <div class="hero-name">${escHtml(h.name)}</div>
+        <div class="hero-badges">
+          ${h.sp ? '<span class="badge badge-sp">SP</span>' : ''}
+          ${h.awakened ? '<span class="badge badge-awake">Awake</span>' : ''}
+          <span class="badge badge-rank">${rankDisplay}</span>
+        </div>
+      </div>
+
+      <div class="card-stats">
+        <div class="stat-item">
+          <span class="stat-label">XP Lvl</span>
+          <span class="stat-value highlight">${h.xp_level !== '' && h.xp_level !== null && h.xp_level !== undefined ? h.xp_level : '—'}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">SP Lvl</span>
+          <span class="stat-value">${h.sp_level !== '' && h.sp_level !== null && h.sp_level !== undefined ? h.sp_level : '—'}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Circle</span>
+          <span class="stat-value teal" style="font-size:0.82rem">${h.circle || '—'}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">→ Next</span>
+          <span class="stat-value">${c.shardsToNext === 'MAX' ? '<span class="max">MAX</span>' : (c.shardsToNext === '—' ? '—' : c.shardsToNext)}</span>
+        </div>
+      </div>
+
+      <div class="card-needs">
+        <div class="need-item">
+          <span class="need-label">👁 Eyes</span>
+          <span class="need-val ${c.eyes === 0 ? 'zero' : ''}">${c.eyes === 0 ? '✓' : c.eyes}</span>
+        </div>
+        <div class="need-item">
+          <span class="need-label">💧 Tears</span>
+          <span class="need-val ${c.tears === 0 ? 'zero' : (c.tears > 5000 ? 'high' : '')}">${c.tears === 0 ? '✓' : (typeof c.tears === 'number' ? c.tears.toLocaleString() : c.tears)}</span>
+        </div>
+        <div class="need-item">
+          <span class="need-label">❤ Hearts</span>
+          <span class="need-val ${heartClass}">${heartDisplay}</span>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="power-display">PWR <span>${h.power ? Number(h.power).toLocaleString() : '—'}</span></div>
+        <div class="card-actions">
+          <button class="btn-icon" onclick="toggleDetail('${h.id}', this)" title="Details">▾ Details</button>
+          <button class="btn-icon edit-btn" onclick="openEditModal('${h.id}')" title="Edit">✏</button>
+          <button class="btn-icon del-btn" onclick="deleteHero('${h.id}')" title="Delete">✕</button>
+        </div>
+      </div>
+
+      <div class="card-detail" id="detail-${h.id}">
+        <div class="detail-section">
+          <div class="detail-title">Skills & SP</div>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-item-label">Skill 1</span><span class="detail-item-val">${h.s1 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 2</span><span class="detail-item-val">${h.s2 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 3</span><span class="detail-item-val">${h.s3 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 4</span><span class="detail-item-val">${h.s4 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 5</span><span class="detail-item-val">${h.s5 || '—'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">SP 1</span><span class="detail-item-val">${h.sp1 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">SP 2</span><span class="detail-item-val">${h.sp2 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">SP 3</span><span class="detail-item-val">${h.sp3 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">SP 4</span><span class="detail-item-val">${h.sp4 || '0'}</span></div>
+            <div class="detail-item"><span class="detail-item-label">SP 5</span><span class="detail-item-val">${h.sp5 || '0'}</span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Cigars Needed (to max each skill)</div>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-item-label">Skill 1</span><span class="detail-item-val">${c.cigars_s1}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 2</span><span class="detail-item-val">${c.cigars_s2}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 3</span><span class="detail-item-val">${c.cigars_s3}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Skill 4</span><span class="detail-item-val">${c.cigars_s4}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Total</span><span class="detail-item-val" style="color:var(--gold-bright);font-weight:600">${c.total_cigars}</span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Shards to Milestones</div>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-item-label">→ T6</span><span class="detail-item-val">${c.shards_to_6 === 0 ? '<span style="color:#5adf8a">✓</span>' : c.shards_to_6}</span></div>
+            <div class="detail-item"><span class="detail-item-label">→ T8</span><span class="detail-item-val">${c.shards_to_8 === 0 ? '<span style="color:#5adf8a">✓</span>' : c.shards_to_8}</span></div>
+            <div class="detail-item"><span class="detail-item-label">→ T10</span><span class="detail-item-val">${c.shards_to_10 === 0 ? '<span style="color:#5adf8a">✓</span>' : c.shards_to_10}</span></div>
+            <div class="detail-item"><span class="detail-item-label">→ T12</span><span class="detail-item-val">${c.shards_to_12 === 0 ? '<span style="color:#5adf8a">✓</span>' : c.shards_to_12}</span></div>
+            <div class="detail-item"><span class="detail-item-label">Shards</span><span class="detail-item-val" style="color:var(--parchment-mid)">${h.shards || '0'}</span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-title">Combat Stats</div>
+          <div class="detail-row">
+            <div><span>STR</span> ${h.str || '—'}</div>
+            <div><span>CON</span> ${h.con || '—'}</div>
+            <div><span>AGI</span> ${h.agi || '—'}</div>
+            <div><span>DEX</span> ${h.dex || '—'}</div>
+            <div><span>LVL</span> ${h.level || '—'}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetail(id, btn) {
+  const el = document.getElementById('detail-' + id);
+  if (!el) return;
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? '▴ Hide' : '▾ Details';
+}
+
+// ══════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════
+
+function populateCircleSelect() {
+  const sel = document.getElementById('f_circle');
+  sel.innerHTML = '<option value="">— Not set —</option>';
+  HEARTS_TABLE.forEach(row => {
+    const opt = document.createElement('option');
+    opt.value = row.circle;
+    opt.textContent = row.circle;
+    sel.appendChild(opt);
+  });
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Hero';
+  clearForm();
+  updateCalcPreview();
+  document.getElementById('modalOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('f_name').focus(), 100);
+}
+
+function openEditModal(id) {
+  const hero = heroes.find(h => h.id === id);
+  if (!hero) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit — ' + hero.name;
+  populateCircleSelect();
+  document.getElementById('f_name').value = hero.name || '';
+  document.getElementById('f_sp').checked = !!hero.sp;
+  document.getElementById('f_awakened').checked = !!hero.awakened;
+  document.getElementById('f_shards').value = hero.shards ?? '';
+  document.getElementById('f_level').value = hero.level ?? '';
+  document.getElementById('f_xp_level').value = hero.xp_level ?? '';
+  document.getElementById('f_sp_level').value = hero.sp_level ?? '';
+  document.getElementById('f_circle').value = hero.circle || '';
+  document.getElementById('f_s1').value = hero.s1 ?? '';
+  document.getElementById('f_s2').value = hero.s2 ?? '';
+  document.getElementById('f_s3').value = hero.s3 ?? '';
+  document.getElementById('f_s4').value = hero.s4 ?? '';
+  document.getElementById('f_s5').value = hero.s5 ?? '';
+  document.getElementById('f_sp1').value = hero.sp1 ?? '';
+  document.getElementById('f_sp2').value = hero.sp2 ?? '';
+  document.getElementById('f_sp3').value = hero.sp3 ?? '';
+  document.getElementById('f_sp4').value = hero.sp4 ?? '';
+  document.getElementById('f_sp5').value = hero.sp5 ?? '';
+  document.getElementById('f_power').value = hero.power ?? '';
+  document.getElementById('f_str').value = hero.str ?? '';
+  document.getElementById('f_con').value = hero.con ?? '';
+  document.getElementById('f_agi').value = hero.agi ?? '';
+  document.getElementById('f_dex').value = hero.dex ?? '';
+  updateCalcPreview();
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function clearForm() {
+  populateCircleSelect();
+  ['f_name','f_shards','f_level','f_xp_level','f_sp_level',
+   'f_s1','f_s2','f_s3','f_s4','f_s5',
+   'f_sp1','f_sp2','f_sp3','f_sp4','f_sp5',
+   'f_power','f_str','f_con','f_agi','f_dex'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f_sp').checked = false;
+  document.getElementById('f_awakened').checked = false;
+  document.getElementById('f_circle').value = '';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  editingId = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function updateCalcPreview() {
+  const pseudo = {
+    shards: document.getElementById('f_shards').value,
+    xp_level: document.getElementById('f_xp_level').value,
+    circle: document.getElementById('f_circle').value,
+    s1: document.getElementById('f_s1').value,
+    s2: document.getElementById('f_s2').value,
+    s3: document.getElementById('f_s3').value,
+    s4: document.getElementById('f_s4').value,
+    s5: document.getElementById('f_s5').value,
+  };
+  const c = calcHero(pseudo);
+  const grid = document.getElementById('calcPreviewGrid');
+  const heartTotal = c.hearts_total === 'MAX' ? 'MAX' : (c.hearts_total === '?' ? '?' : Number(c.hearts_total).toLocaleString());
+  grid.innerHTML = `
+    <div class="calc-item"><span class="calc-item-label">Rank</span><span class="calc-item-val gold">${c.rank}</span></div>
+    <div class="calc-item"><span class="calc-item-label">→ Next Tier</span><span class="calc-item-val">${c.shardsToNext}</span></div>
+    <div class="calc-item"><span class="calc-item-label">👁 Eyes Left</span><span class="calc-item-val ${c.eyes===0?'green':''}">${c.eyes}</span></div>
+    <div class="calc-item"><span class="calc-item-label">💧 Tears Left</span><span class="calc-item-val ${c.tears===0?'green':''}">${typeof c.tears==='number'?c.tears.toLocaleString():c.tears}</span></div>
+    <div class="calc-item"><span class="calc-item-label">❤ Hearts Total</span><span class="calc-item-val">${heartTotal}</span></div>
+    <div class="calc-item"><span class="calc-item-label">🚬 Total Cigars</span><span class="calc-item-val gold">${c.total_cigars}</span></div>
+  `;
+}
+
+function saveHero() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { document.getElementById('f_name').focus(); showToast('⚠ Hero name required'); return; }
+
+  const hero = {
+    id: editingId || ('h' + Date.now()),
+    name,
+    sp: document.getElementById('f_sp').checked,
+    awakened: document.getElementById('f_awakened').checked,
+    shards: document.getElementById('f_shards').value !== '' ? parseFloat(document.getElementById('f_shards').value) : '',
+    level: document.getElementById('f_level').value !== '' ? parseInt(document.getElementById('f_level').value) : '',
+    xp_level: document.getElementById('f_xp_level').value !== '' ? parseInt(document.getElementById('f_xp_level').value) : '',
+    sp_level: document.getElementById('f_sp_level').value !== '' ? parseInt(document.getElementById('f_sp_level').value) : '',
+    circle: document.getElementById('f_circle').value,
+    s1: document.getElementById('f_s1').value !== '' ? parseInt(document.getElementById('f_s1').value) : '',
+    s2: document.getElementById('f_s2').value !== '' ? parseInt(document.getElementById('f_s2').value) : '',
+    s3: document.getElementById('f_s3').value !== '' ? parseInt(document.getElementById('f_s3').value) : '',
+    s4: document.getElementById('f_s4').value !== '' ? parseInt(document.getElementById('f_s4').value) : '',
+    s5: document.getElementById('f_s5').value !== '' ? parseInt(document.getElementById('f_s5').value) : '',
+    sp1: document.getElementById('f_sp1').value !== '' ? parseInt(document.getElementById('f_sp1').value) : '',
+    sp2: document.getElementById('f_sp2').value !== '' ? parseInt(document.getElementById('f_sp2').value) : '',
+    sp3: document.getElementById('f_sp3').value !== '' ? parseInt(document.getElementById('f_sp3').value) : '',
+    sp4: document.getElementById('f_sp4').value !== '' ? parseInt(document.getElementById('f_sp4').value) : '',
+    sp5: document.getElementById('f_sp5').value !== '' ? parseInt(document.getElementById('f_sp5').value) : '',
+    power: document.getElementById('f_power').value !== '' ? parseInt(document.getElementById('f_power').value) : '',
+    str: document.getElementById('f_str').value !== '' ? parseInt(document.getElementById('f_str').value) : '',
+    con: document.getElementById('f_con').value !== '' ? parseInt(document.getElementById('f_con').value) : '',
+    agi: document.getElementById('f_agi').value !== '' ? parseInt(document.getElementById('f_agi').value) : '',
+    dex: document.getElementById('f_dex').value !== '' ? parseInt(document.getElementById('f_dex').value) : '',
+  };
+
+  if (editingId) {
+    const idx = heroes.findIndex(h => h.id === editingId);
+    if (idx > -1) heroes[idx] = hero;
+    showToast('✓ Hero updated');
+  } else {
+    heroes.push(hero);
+    showToast('✓ Hero added');
+  }
+
+  saveHeroes(heroes);
+  closeModal();
+  renderHeroes();
+}
+
+function deleteHero(id) {
+  const hero = heroes.find(h => h.id === id);
+  if (!hero) return;
+  if (!confirm(`Remove ${hero.name} from your tracker?`)) return;
+  heroes = heroes.filter(h => h.id !== id);
+  saveHeroes(heroes);
+  renderHeroes();
+  showToast('Hero removed');
+}
+
+// ══════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (document.getElementById('modalOverlay').style.display !== 'none') saveHero();
+  }
+});
+
+// ── INIT ──
+populateCircleSelect();
+renderHeroes();
+</script>
+</body>
+</html>
