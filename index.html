@@ -668,21 +668,23 @@
       <div class="form-section">
         <div class="form-section-title">Progression</div>
         <div class="form-grid">
-          <div class="form-field">
-            <label>Shards</label>
-            <input type="number" id="f_shards" min="0" max="700" placeholder="0" oninput="updateCalcPreview()">
+          <div class="form-field" style="grid-column:1/-1">
+            <label>Tier</label>
+            <select id="f_shards" onchange="updateCalcPreview()">
+              <option value="">— Select Tier —</option>
+            </select>
           </div>
           <div class="form-field">
-            <label>Level</label>
-            <input type="number" id="f_level" min="0" max="200" placeholder="0" oninput="updateCalcPreview()">
+            <label>Hero Level (0–200)</label>
+            <input type="number" id="f_level" min="0" max="200" placeholder="0">
           </div>
           <div class="form-field">
-            <label>XP Level</label>
+            <label>X Level (0–30)</label>
             <input type="number" id="f_xp_level" min="0" max="30" placeholder="0" oninput="updateCalcPreview()">
           </div>
           <div class="form-field">
-            <label>SP Level</label>
-            <input type="number" id="f_sp_level" min="0" max="81" placeholder="0" oninput="updateCalcPreview()">
+            <label>SP Level (0–165)</label>
+            <input type="number" id="f_sp_level" min="0" max="165" placeholder="0" oninput="updateCalcPreview()">
           </div>
         </div>
       </div>
@@ -1233,6 +1235,18 @@ function populateCircleSelect() {
   });
 }
 
+function populateTierSelect() {
+  const sel = document.getElementById('f_shards');
+  sel.innerHTML = '<option value="">— Select Tier —</option>';
+  SHARDS_TABLE.forEach(row => {
+    if (row.shards === 0) return;
+    const opt = document.createElement('option');
+    opt.value = row.shards;
+    opt.textContent = 'Tier ' + row.tier + '  (' + row.shards + ' shards)';
+    sel.appendChild(opt);
+  });
+}
+
 function openAddModal() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Add Hero';
@@ -1248,6 +1262,7 @@ function openEditModal(id) {
   editingId = id;
   document.getElementById('modalTitle').textContent = 'Edit — ' + hero.name;
   populateCircleSelect();
+  populateTierSelect();
   document.getElementById('f_name').value = hero.name || '';
   document.getElementById('f_sp').checked = !!hero.sp;
   document.getElementById('f_awakened').checked = !!hero.awakened;
@@ -1277,13 +1292,15 @@ function openEditModal(id) {
 
 function clearForm() {
   populateCircleSelect();
-  ['f_name','f_shards','f_level','f_xp_level','f_sp_level',
+  populateTierSelect();
+  ['f_name','f_level','f_xp_level','f_sp_level',
    'f_s1','f_s2','f_s3','f_s4','f_s5',
    'f_sp1','f_sp2','f_sp3','f_sp4','f_sp5',
    'f_power','f_str','f_con','f_agi','f_dex'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  document.getElementById('f_shards').value = '';
   document.getElementById('f_sp').checked = false;
   document.getElementById('f_awakened').checked = false;
   document.getElementById('f_circle').value = '';
@@ -1405,6 +1422,7 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ──
 populateCircleSelect();
+populateTierSelect();
 renderHeroes();
 </script>
 </body>
